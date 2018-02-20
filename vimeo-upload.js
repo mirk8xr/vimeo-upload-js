@@ -11,10 +11,9 @@
  |
  | This project was released under Apache 2.0" license.
  |
- | @link      http://websemantics.ca
- | @author    Web Semantics, Inc. Dev Team <team@websemantics.ca>
- | @author    Adnan M.Sagar, PhD. <adnan@websemantics.ca>
- | @credits   Built on cors-upload-sample, https://github.com/googledrive/cors-upload-sample
+ | @link      http://www.ecoach.com
+ | @author    eCoach LMS Pty Ltd. Dev Team <developers@ecoach.com>
+ | @credits   Built on vimeo-upload, https://github.com/websemantics/vimeo-upload
  */
 
 ;

@@ -6,15 +6,12 @@
  ╰────╯ ╰─╯╰─╯╰─╯╰─╯╰───╯╰───╯  ╰────────┴─────────────────────╯                    
 ```
 
-[![Build Status](https://travis-ci.org/websemantics/vimeo-upload.svg?branch=master)](https://travis-ci.org/websemantics/vimeo-upload)
+[![Build Status](https://travis-ci.org/ecoach-lms/vimeo-upload-js.svg?branch=master)](https://travis-ci.org/ecoach-lms/vimeo-upload)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
-[![npm version](https://badge.fury.io/js/vimeo-upload.svg)](https://badge.fury.io/js/vimeo-upload)
-[![Bower version](https://badge.fury.io/bo/vimeo-upload.svg)](https://badge.fury.io/bo/vimeo-upload)
-[![GitHub forks](https://img.shields.io/github/forks/websemantics/vimeo-upload.svg)](https://github.com/websemantics/vimeo-upload/network) [![GitHub stars](https://img.shields.io/github/stars/websemantics/vimeo-upload.svg)](https://github.com/websemantics/vimeo-upload/stargazers)
-[![Percentage of issues still open](http://isitmaintained.com/badge/open/websemantics/vimeo-upload.svg)](http://isitmaintained.com/project/websemantics/vimeo-upload "Percentage of issues still open")
+[![GitHub forks](https://img.shields.io/github/forks/ecoach-lms/vimeo-upload-js.svg)](https://github.com/ecoach-lms/vimeo-upload/network)
+[![GitHub stars](https://img.shields.io/github/stars/ecoach-lms/vimeo-upload-js.svg)](https://github.com/ecoach-lms/vimeo-upload/stargazers)
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/ecoach-lms/vimeo-upload-js.svg)](http://isitmaintained.com/project/ecoach-lms/vimeo-upload "Percentage of issues still open")
 > Upload videos to your Vimeo account and update their metadata directly from a browser or a Node.js app.
-
-Try it [LIVE](http://websemantics.github.io/vimeo-upload/)
 
 ## Install
 
