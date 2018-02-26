@@ -1,7 +1,0 @@
-script: npm run deploy
-language: node_js
-node_js:
-- '0.10'
-env:
-  global:
-  - GH_REF: github.com/ecoach-lms/vimeo-upload-js.git
