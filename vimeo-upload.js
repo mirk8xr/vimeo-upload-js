@@ -155,6 +155,7 @@
         for (var i in defaults) {
             this[i] = (opts[i] !== undefined) ? opts[i] : defaults[i]
         }
+        this.accept = 'application/vnd.vimeo.*+json;version=' + this.api_version
 
         this.contentType = opts.contentType || this.file.type || defaults.contentType
         this.httpMethod = opts.fileId ? 'PUT' : 'POST'
@@ -194,7 +195,7 @@
         xhr.open(this.httpMethod, this.url, true)
         xhr.setRequestHeader('Authorization', 'Bearer ' + this.token)
         xhr.setRequestHeader('Content-Type', 'application/json')
-        xhr.setRequestHeader('Accept', 'application/vnd.vimeo.*+json;version=' + defaults.api_version)
+        xhr.setRequestHeader('Accept', this.accept)
 
         xhr.onload = function(e) {
             // get vimeo upload  url, user (for available quote), ticket id and complete url
@@ -242,10 +243,10 @@
 
         var xhr = new XMLHttpRequest()
         xhr.open('PATCH', this.url, true)
-        xhr.setRequestHeader('Accept', 'application/vnd.vimeo.*+json;version=' + defaults.api_version)
+        xhr.setRequestHeader('Accept', this.accept)
         xhr.setRequestHeader('Tus-Resumable', '1.0.0')
         xhr.setRequestHeader('Upload-Offset', this.offset)
-        xhr.setRequestHeader('Content-Type', defaults.contentType)
+        xhr.setRequestHeader('Content-Type', this.contentType)
 
         if (xhr.upload) {
             xhr.upload.addEventListener('progress', this.onProgress)
@@ -264,7 +265,7 @@
         var xhr = new XMLHttpRequest()
         xhr.open('HEAD', this.url, true)
         xhr.setRequestHeader('Tus-Resumable', '1.0.0');
-        xhr.setRequestHeader('Accept', 'application/vnd.vimeo.*+json;version=' + defaults.api_version)
+        xhr.setRequestHeader('Accept', this.accept)
         if (xhr.upload) {
             xhr.upload.addEventListener('progress', this.onProgress)
         }
