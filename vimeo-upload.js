@@ -315,7 +315,7 @@
      * @param {object} e XHR event
      */
     me.prototype.onContentUploadSuccess_ = function(e) {
-        if (e.target.status < 205) {
+        if (e.target.status >= 200 && e.target.status < 300) {
             this.complete_()
         } else if (e.target.status == 308) {
             this.extractRange_(e.target)
