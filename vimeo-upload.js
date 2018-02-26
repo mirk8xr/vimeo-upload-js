@@ -108,7 +108,8 @@
         api_url: 'https://api.vimeo.com',
         name: 'Default name',
         description: 'Default description',
-        contentType: 'application/octet-stream',
+        contentType: 'application/offset+octet-stream',
+        api_version: '3.4',
         token: null,
         file: {},
         metadata: [],
@@ -153,6 +154,7 @@
         for (var i in defaults) {
             this[i] = (opts[i] !== undefined) ? opts[i] : defaults[i]
         }
+        this.accept = 'application/vnd.vimeo.*+json;version=' + this.api_version
 
         this.contentType = opts.contentType || this.file.type || defaults.contentType
         this.httpMethod = opts.fileId ? 'PUT' : 'POST'
@@ -160,7 +162,7 @@
         this.videoData = {
             name: (opts.name > '') ? opts.name : defaults.name,
             description: (opts.description > '') ? opts.description : defaults.description,
-            'privacy.view': opts.private ? 'nobody' : 'anybody'
+            privacy: { view: opts.private ? 'nobody' : 'anybody' }
         }
 
         if (!(this.url = opts.url)) {
@@ -192,12 +194,14 @@
         xhr.open(this.httpMethod, this.url, true)
         xhr.setRequestHeader('Authorization', 'Bearer ' + this.token)
         xhr.setRequestHeader('Content-Type', 'application/json')
+        xhr.setRequestHeader('Accept', this.accept)
 
         xhr.onload = function(e) {
             // get vimeo upload  url, user (for available quote), ticket id and complete url
             if (e.target.status < 400) {
                 var response = JSON.parse(e.target.responseText)
-                this.url = response.upload_link_secure
+                this.url = response.upload.upload_link
+                this.video_url = response.uri
                 this.user = response.user
                 this.ticket_id = response.ticket_id
                 this.complete_url = defaults.api_url + response.complete_uri
@@ -208,10 +212,12 @@
         }.bind(this)
 
         xhr.onerror = this.onUploadError_.bind(this)
-        xhr.send(JSON.stringify({
-            type: 'streaming',
-            upgrade_to_1080: this.upgrade_to_1080
-        }))
+        const body = this.videoData
+        body.upload = {
+            approach: 'tus',
+            size: this.file.size
+        }
+        xhr.send(JSON.stringify(body))
     }
 
     // -------------------------------------------------------------------------
@@ -235,10 +241,11 @@
         }
 
         var xhr = new XMLHttpRequest()
-        xhr.open('PUT', this.url, true)
+        xhr.open('PATCH', this.url, true)
+        xhr.setRequestHeader('Accept', this.accept)
+        xhr.setRequestHeader('Tus-Resumable', '1.0.0')
+        xhr.setRequestHeader('Upload-Offset', this.offset)
         xhr.setRequestHeader('Content-Type', this.contentType)
-            // xhr.setRequestHeader('Content-Length', this.file.size)
-        xhr.setRequestHeader('Content-Range', 'bytes ' + this.offset + '-' + (end - 1) + '/' + this.file.size)
 
         if (xhr.upload) {
             xhr.upload.addEventListener('progress', this.onProgress)
@@ -255,13 +262,22 @@
      */
     me.prototype.resume_ = function() {
         var xhr = new XMLHttpRequest()
-        xhr.open('PUT', this.url, true)
-        xhr.setRequestHeader('Content-Range', 'bytes */' + this.file.size)
-        xhr.setRequestHeader('X-Upload-Content-Type', this.file.type)
+        xhr.open('HEAD', this.url, true)
+        xhr.setRequestHeader('Tus-Resumable', '1.0.0');
+        xhr.setRequestHeader('Accept', this.accept)
         if (xhr.upload) {
             xhr.upload.addEventListener('progress', this.onProgress)
         }
-        xhr.onload = this.onContentUploadSuccess_.bind(this)
+        const onload = function(e) {
+            var response = JSON.parse(e.target.responseText)
+            this.offset = response.offset
+            if (this.offset >= this.file.size) {
+                this.onContentUploadSuccess_(e)
+            } else {
+                this.sendFile_()
+            }
+        }
+        xhr.onload = onload.bind(this);
         xhr.onerror = this.onContentUploadError_.bind(this)
         xhr.send()
     }
@@ -287,73 +303,8 @@
      * @private
      */
     me.prototype.complete_ = function(xhr) {
-        var xhr = new XMLHttpRequest()
-        xhr.open('DELETE', this.complete_url, true)
-        xhr.setRequestHeader('Authorization', 'Bearer ' + this.token)
-
-        xhr.onload = function(e) {
-
-            // Get the video location (videoId)
-            if (e.target.status < 400) {
-                var location = e.target.getResponseHeader('Location')
-
-                // Example of location: ' /videos/115365719', extract the video id only
-                var video_id = location.split('/').pop()
-                    // Update the video metadata
-                this.onUpdateVideoData_(video_id)
-            } else {
-                this.onCompleteError_(e)
-            }
-        }.bind(this)
-
-        xhr.onerror = this.onCompleteError_.bind(this)
-        xhr.send()
-    }
-
-    /**
-     * Update the Video Data and add the metadata to the upload object
-     *
-     * @private
-     * @param {string} [id] Video Id
-     */
-    me.prototype.onUpdateVideoData_ = function(video_id) {
-        var url = this.buildUrl_(video_id, [], defaults.api_url + '/videos/')
-        var httpMethod = 'PATCH'
-        var xhr = new XMLHttpRequest()
-
-        xhr.open(httpMethod, url, true)
-        xhr.setRequestHeader('Authorization', 'Bearer ' + this.token)
-        xhr.onload = function(e) {
-            // add the metadata
-            this.onGetMetadata_(e, video_id)
-        }.bind(this)
-        xhr.send(this.buildQuery_(this.videoData))
-    }
-
-    /**
-     * Retrieve the metadata from a successful onUpdateVideoData_ response
-     * This is is useful when uploading unlisted videos as the URI has changed.
-     *
-     * If successful call 'onUpdateVideoData_'
-     *
-     * @private
-     * @param {object} e XHR event
-     * @param {string} [id] Video Id
-     */
-    me.prototype.onGetMetadata_ = function(e, video_id) {
-        // Get the video location (videoId)
-        if (e.target.status < 400) {
-            if (e.target.response) {
-                // add the returned metadata to the metadata array
-                var meta = JSON.parse(e.target.response)
-                    // get the new index of the item
-                var index = this.metadata.push(meta) - 1
-                    // call the complete method
-                this.onComplete(video_id, index)
-            } else {
-                this.onCompleteError_(e)
-            }
-        }
+        const video_id = this.video_url.split('/').pop()
+        this.onComplete(video_id);
     }
 
     /**
@@ -365,7 +316,7 @@
      * @param {object} e XHR event
      */
     me.prototype.onContentUploadSuccess_ = function(e) {
-        if (e.target.status == 200 || e.target.status == 201) {
+        if (e.target.status >= 200 && e.target.status < 300) {
             this.complete_()
         } else if (e.target.status == 308) {
             this.extractRange_(e.target)
