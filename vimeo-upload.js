@@ -268,15 +268,16 @@
         if (xhr.upload) {
             xhr.upload.addEventListener('progress', this.onProgress)
         }
-        xhr.onload = function (e) {
+        const onload = function(e) {
             var response = JSON.parse(e.target.responseText)
             this.offset = response.offset
             if (this.offset >= this.file.size) {
-                this.onContentUploadSuccess_.bind(this)
+                this.onContentUploadSuccess_(e)
             } else {
-                this.sendFile_.bind(this)
+                this.sendFile_()
             }
         }
+        xhr.onload = onload.bind(this);
         xhr.onerror = this.onContentUploadError_.bind(this)
         xhr.send()
     }
