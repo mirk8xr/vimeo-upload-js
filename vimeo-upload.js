@@ -156,7 +156,6 @@
         }
         this.accept = 'application/vnd.vimeo.*+json;version=' + this.api_version
 
-        this.contentType = opts.contentType || this.file.type || defaults.contentType
         this.httpMethod = opts.fileId ? 'PUT' : 'POST'
 
         this.videoData = {
