@@ -191,7 +191,9 @@
     me.prototype.upload = function() {
         var xhr = new XMLHttpRequest()
         xhr.open(this.httpMethod, this.url, true)
-        xhr.setRequestHeader('Authorization', 'Bearer ' + this.token)
+        if (this.token) {
+          xhr.setRequestHeader('Authorization', 'Bearer ' + this.token)
+        }
         xhr.setRequestHeader('Content-Type', 'application/json')
         xhr.setRequestHeader('Accept', this.accept)
 
