@@ -93,7 +93,7 @@
     - contentType (string), video content type
     - token (string), vimeo api token
     - file (object), video file
-    - metadata (array), data to associate with the video
+    - metadata (object), data to associate with the video
     - upgrade_to_1080 (boolean), set video resolution to high definition
     - offset (int),
     - chunkSize (int),
@@ -112,7 +112,7 @@
         api_version: '3.4',
         token: null,
         file: {},
-        metadata: [],
+        metadata: {},
         upgrade_to_1080: false,
         offset: 0,
         chunkSize: 0,
@@ -157,12 +157,10 @@
         this.accept = 'application/vnd.vimeo.*+json;version=' + this.api_version
 
         this.httpMethod = opts.fileId ? 'PUT' : 'POST'
-
-        this.videoData = {
-            name: (opts.name > '') ? opts.name : defaults.name,
-            description: (opts.description > '') ? opts.description : defaults.description,
-            privacy: { view: opts.private ? 'nobody' : 'anybody' }
-        }
+     
+        this.videoData = opts.metadata
+        this.videoData.name = (opts.name > '') ? opts.name : defaults.name
+        this.videoData.description: (opts.description > '') ? opts.description : defaults.description,
 
         if (!(this.url = opts.url)) {
             var params = opts.params || {} /*  TODO params.uploadType = 'resumable' */
