@@ -2,5 +2,6 @@
 /bower_components
 /node_modules
 /video_test
+/video_test/*
 video_test/*
 npm-debug.log
