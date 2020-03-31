@@ -110,7 +110,7 @@
   var defaults = {
     api_url: 'https://api.vimeo.com',
     name: 'Default name',
-    description: 'Default description',
+    description: '',
     contentType: 'application/offset+octet-stream',
     api_version: '3.4',
     token: null,
