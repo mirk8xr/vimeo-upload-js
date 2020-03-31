@@ -163,14 +163,14 @@
         <div class="row">
           <div class="col-md-8">
             <div class="form-group">
-                <input type="text" id="accessToken" class="form-control" placeholder="Vimeo access token" required autofocus></input>
+                <input type="text" id="accessToken" class="form-control" placeholder="Vimeo access token" value="07458366543eb971190099261982985a" required autofocus></input>
                 <div class="help">Create an access token here: <a href="https://developer.vimeo.com/apps" target="_blank">https://developer.vimeo.com/apps</a></div>
             </div>
             <div class="form-group">
-                <input type="text" name="name" id="videoName" class="form-control" placeholder="Video name" value=""></input>
+                <input type="text" name="name" id="videoName" class="form-control" placeholder="Video name" value="Wall"></input>
             </div>
             <div class="form-group">
-                <input type="text" name="description" id="videoDescription" class="form-control" placeholder="Video description" value=""></input>
+                <input type="text" name="description" id="videoDescription" class="form-control" placeholder="Video description" value="White wall"></input>
             </div>
             <div class="checkbox">
                 <label>
@@ -227,6 +227,8 @@
                 name: document.getElementById('videoName').value,
                 description: document.getElementById('videoDescription').value,
                 private: document.getElementById('make_private').checked,
+                checkAvailable: true,
+                checkPreview: true,
                 file: files[0],
                 token: document.getElementById('accessToken').value,
                 upgrade_to_1080: document.getElementById('upgrade_to_1080').checked,
@@ -236,27 +238,30 @@
                 onProgress: function(data) {
                     updateProgress(data.loaded / data.total)
                 },
-                onComplete: function(videoId, index) {
-                    var url = 'https://vimeo.com/' + videoId
-
-                    if (index > -1) {
-                        /* The metadata contains all of the uploaded video(s) details see: https://developer.vimeo.com/api/endpoints/videos#/{video_id} */
-                        url = this.metadata[index].link //
-
-                        /* add stringify the json object for displaying in a text area */
-                        var pretty = JSON.stringify(this.metadata[index], null, 2)
-
-                        console.log(pretty) /* echo server data */
-                    }
-
-                    showMessage('<strong>Upload Successful</strong>: check uploaded video @ <a href="' + url + '">' + url + '</a>. Open the Console for the response details.')
+                onComplete: function(videoId) {
+                    var url = 'https://vimeo.com/' + videoId;
+                    showMessage('<strong>Upload Successful</strong>: now checking the upload status.')
+                },
+                onAvailable: function(video) {
+                    console.log('onAvailable index.html');
+                    console.log(video);
+                    showMessage(video.embed.html)
+                },
+                onPreview: function(pictures) {
+                    console.log('onPreview index.html');
+                    console.log(pictures);
                 }
             })).upload()
 
             /* local function: show a user message */
             function showMessage(html, type) {
                 /* hide progress bar */
-                document.getElementById('progress-container').style.display = 'none'
+                document.getElementById('progress-container').style.display = 'none';
+
+                // Remove alert if exist
+                [].forEach.call(document.querySelectorAll('.alert'),function(e){
+                    e.parentNode.removeChild(e);
+                });
 
                 /* display alert message */
                 var element = document.createElement('div')
