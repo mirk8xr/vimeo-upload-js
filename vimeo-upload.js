@@ -2,18 +2,19 @@
  | Vimeo-Upload: Upload videos to your Vimeo account directly from a
  |               browser or a Node.js app
  |
- |  ╭───╮╭─╮  
- |  │   ││ │╭─╮╭──┬──┬─╮╭───╮╭───╮   
+ |  ╭───╮╭─╮
+ |  │   ││ │╭─╮╭──┬──┬─╮╭───╮╭───╮
  |  │   ││ │├─┤│ ╭╮ ╭╮ ││ ─ ││╭╮ │  ╭────────┬─────────────────────╮
- |  ╰╮  ╰╯╭╯│ ││ ││ ││ ││  ─┤│╰╯ │  | UPLOAD │ ▒▒▒▒▒▒▒▒▒▒▒░░░░ %75 | 
- |   ╰────╯ ╰─╯╰─╯╰─╯╰─╯╰───╯╰───╯  ╰────────┴─────────────────────╯                    
+ |  ╰╮  ╰╯╭╯│ ││ ││ ││ ││  ─┤│╰╯ │  | UPLOAD │ ▒▒▒▒▒▒▒▒▒▒▒░░░░ %75 |
+ |   ╰────╯ ╰─╯╰─╯╰─╯╰─╯╰───╯╰───╯  ╰────────┴─────────────────────╯
  |
  |
  | This project was released under Apache 2.0" license.
  |
  | @link      http://www.ecoach.com
  | @author    eCoach LMS Pty Ltd. Dev Team <developers@ecoach.com>
- | @credits   Built on vimeo-upload, https://github.com/websemantics/vimeo-upload
+ | @credits   Built on vimeo-upload, https://github.com/aaronflorey/vimeo-upload-js fork of https://github.com/websemantics/vimeo-upload
+ | @startVersion 0.1.9
  */
 
 ;
@@ -100,6 +101,8 @@
   - retryHandler (RetryHandler), hanlder class
   - onComplete (function), handler for onComplete event
   - onProgress (function), handler for onProgress event
+  - onAvailable (function), handler for onAvailable event
+  - onPreview (function), handler for onPreview event
   - onError (function), handler for onError event
 
   */
@@ -112,13 +115,36 @@
     api_version: '3.4',
     token: null,
     file: {},
-    metadata: {},
+    metadata: {
+      embed: {
+        playbar: true,
+        color: '#00adef',
+        volume: true,
+        buttons: {
+          embed: false,
+          fullscreen: true,
+          hd: true,
+          like: false,
+          scaling: true,
+          share: false,
+          watchlater: false
+        }
+      },
+      privacy: {
+        add: false
+      }
+    },
     upgrade_to_1080: false,
     offset: 0,
     chunkSize: 0,
+    checkAvailable: false,
+    checkAvailableInterval: 10000,
+    checkingPreview: true,
     retryHandler: new RetryHandler(),
     onComplete: function () {},
     onProgress: function () {},
+    onAvailable: function () {},
+    onPreview: function () {},
     onError: function () {}
   };
 
@@ -282,6 +308,40 @@
   };
 
   /**
+   * Query for the upload state of the file
+   *
+   * @private
+   */
+  me.prototype.checkAvailable_ = function () {
+    var xhr = new XMLHttpRequest();
+    const video_id = this.video_url.split('/').pop();
+    xhr.open('GET', this.buildUrl_(video_id), true);
+    if (this.token) {
+      xhr.setRequestHeader('Authorization', 'Bearer ' + this.token);
+    }
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Accept', this.accept);
+
+    const onload = function (e) {
+      var response = JSON.parse(e.target.responseText);
+      this.status = response.status;
+      if (this.status == 'available') {
+        this.onContentUploadAvailable_(e);
+      } else {
+        if (this.checkingPreview) {
+          if (response.pictures && response.pictures && response.pictures.uri != null) {
+            this.preview_(response.pictures);
+          }
+        }
+        setTimeout(this.checkAvailable_.bind(this), this.checkAvailableInterval);
+      }
+    };
+    xhr.onload = onload.bind(this);
+    xhr.onerror = this.onContentUploadAvailableError_.bind(this);
+    xhr.send();
+  };
+
+  /**
    * Extract the last saved range if available in the request.
    *
    * @param {XMLHttpRequest} xhr Request object
@@ -304,6 +364,28 @@
   me.prototype.complete_ = function (xhr) {
     const video_id = this.video_url.split('/').pop();
     this.onComplete(video_id);
+    if (this.checkAvailable) {
+      this.checkAvailable_();
+    }
+  };
+
+  /**
+   * The video is transcoded.
+   *
+   * @private
+   */
+  me.prototype.available_ = function (response) {
+    this.onAvailable(response);
+  };
+
+  /**
+   * The video is transcoded.
+   *
+   * @private
+   */
+  me.prototype.preview_ = function (pictures) {
+    this.checkingPreview = false;
+    this.onPreview(pictures);
   };
 
   /**
@@ -321,6 +403,21 @@
       this.extractRange_(e.target);
       this.retryHandler.reset();
       this.sendFile_();
+    }
+  };
+
+  /**
+   * Handle successful responses for state file upload.
+   *
+   * @private
+   * @param {object} e XHR event
+   */
+  me.prototype.onContentUploadAvailable_ = function (e) {
+    if (e.target.status >= 200 && e.target.status < 300) {
+      var response = JSON.parse(e.target.responseText);
+      this.available_(response);
+    }else{
+      this.onError(e.target.response);
     }
   };
 
@@ -360,6 +457,16 @@
   };
 
   /**
+   * Handles errors for the check upload status request.
+   *
+   * @private
+   * @param {object} e XHR event
+   */
+  me.prototype.onContentUploadAvailableError_ = function (e) {
+    this.onError(e.target.response); // TODO - Retries for initial upload
+  };
+
+  /**
    * Construct a query string from a hash/object
    *
    * @private
@@ -382,7 +489,7 @@
    * @return {string} URL
    */
   me.prototype.buildUrl_ = function (id, params, baseUrl) {
-    var url = baseUrl || defaults.api_url + '/me/videos';
+    var url = baseUrl || defaults.api_url + '/me/videos/';
     if (id) {
       url += id;
     }
